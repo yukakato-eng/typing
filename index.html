@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英単語タイピングゲーム - ELEMENT Lesson 3-6</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .setup-screen, .game-screen, .result-screen {
+            display: none;
+        }
+
+        .setup-screen.active, .game-screen.active, .result-screen.active {
+            display: block;
+        }
+
+        .option-group {
+            margin-bottom: 30px;
+        }
+
+        .option-group h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .hint-btn {
+            background: #fbbf24;
+            border-color: #fbbf24;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .hint-btn:hover {
+            background: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .hint-box {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .hint-box.visible {
+            display: block;
+        }
+
+        .hint-text {
+            color: #92400e;
+            font-size: 16px;
+        }
+
+        .word-count {
+            display: inline-block;
+            background: rgba(255,255,255,0.3);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.3);
+        }
+
+        button.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        button.start-btn {
+            width: 100%;
+            background: #667eea;
+            color: white;
+            font-size: 20px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        button.start-btn:hover {
+            background: #5568d3;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .question-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .question-number {
+            font-size: 16px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .question-text {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .question-hint {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
+        .answer-input {
+            width: 100%;
+            padding: 20px;
+            font-size: 24px;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 20px rgba(102,126,234,0.3);
+        }
+
+        .answer-input.correct {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .answer-input.incorrect {
+            border-color: #f56565;
+            background: #fff5f5;
+        }
+
+        .feedback {
+            text-align: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+            min-height: 30px;
+            font-weight: bold;
+        }
+
+        .feedback.correct {
+            color: #48bb78;
+        }
+
+        .feedback.incorrect {
+            color: #f56565;
+        }
+
+        .result-screen {
+            text-align: center;
+        }
+
+        .result-time {
+            font-size: 64px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 30px 0;
+        }
+
+        .result-stats {
+            background: #f5f5f5;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .score-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .score-number {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .name-input-section {
+            margin: 30px 0;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .save-score-btn {
+            width: 100%;
+            background: #48bb78;
+            border-color: #48bb78;
+            color: white;
+        }
+
+        .save-score-btn:hover {
+            background: #38a169;
+            border-color: #38a169;
+        }
+
+        .ranking-link {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .ranking-screen {
+            display: none;
+        }
+
+        .ranking-screen.active {
+            display: block;
+        }
+
+        .ranking-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .ranking-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-size: 16px;
+        }
+
+        .ranking-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 16px;
+        }
+
+        .ranking-table tr:hover {
+            background: #f7fafc;
+        }
+
+        .rank-medal {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+        .rank-1 {
+            background: #fef5e7;
+        }
+
+        .rank-2 {
+            background: #f4f4f4;
+        }
+
+        .rank-3 {
+            background: #fdf2e3;
+        }
+
+        .teacher-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .reset-btn {
+            background: #f56565;
+            border-color: #f56565;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #e53e3e;
+            border-color: #e53e3e;
+        }
+
+        .back-btn {
+            background: #718096;
+            border-color: #718096;
+            color: white;
+        }
+
+        .back-btn:hover {
+            background: #4a5568;
+            border-color: #4a5568;
+        }
+
+        .empty-ranking {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+            font-size: 18px;
+        }
+
+        .qr-section {
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .qr-code-container {
+            display: inline-block;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .submission-code {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 5px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .teacher-mode-btn {
+            background: #ed8936;
+            border-color: #ed8936;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .teacher-mode-btn:hover {
+            background: #dd6b20;
+            border-color: #dd6b20;
+        }
+
+        .code-input-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+        }
+
+        .code-input {
+            width: 300px;
+            max-width: 100%;
+            padding: 15px;
+            font-size: 24px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            text-align: center;
+            letter-spacing: 3px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+        }
+
+        .submit-code-btn {
+            background: #48bb78;
+            border-color: #48bb78;
+            color: white;
+            padding: 15px 40px;
+        }
+
+        .submit-code-btn:hover {
+            background: #38a169;
+            border-color: #38a169;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .question-text {
+                font-size: 24px;
+            }
+
+            .answer-input {
+                font-size: 18px;
+            }
+
+            .result-time {
+                font-size: 48px;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ 英単語タイピングゲーム ⚡</h1>
+
+        <!-- セットアップ画面 -->
+        <div class="setup-screen active">
+            <div class="option-group">
+                <h2>📚 出題モード</h2>
+                <div class="button-group">
+                    <button class="mode-btn selected" data-mode="words">単語モード</button>
+                    <button class="mode-btn" data-mode="phrases">熟語モード</button>
+                </div>
+            </div>
+
+            <div class="option-group">
+                <h2>📝 出題数</h2>
+                <div class="button-group">
+                    <button class="count-btn" data-count="10">10問</button>
+                    <button class="count-btn selected" data-count="25">25問</button>
+                    <button class="count-btn" data-count="50">50問</button>
+                    <button class="count-btn" data-count="all">全問</button>
+                </div>
+            </div>
+
+            <div class="option-group">
+                <h2>🔄 問題形式</h2>
+                <div class="button-group">
+                    <button class="direction-btn selected" data-direction="ja-en">日本語 → 英語</button>
+                    <button class="direction-btn" data-direction="en-ja">英語 → 日本語</button>
+                </div>
+            </div>
+
+            <button class="start-btn">ゲームスタート！</button>
+            
+            <div class="ranking-link">
+                <button class="view-spreadsheet-btn" style="padding: 12px 30px; background: #48bb78; border-color: #48bb78; color: white;">📊 スプレッドシートで結果を見る</button>
+            </div>
+        </div>
+
+        <!-- ゲーム画面 -->
+        <div class="game-screen">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 0%"></div>
+            </div>
+
+            <div class="game-info">
+                <div class="info-item">
+                    <div class="info-label">経過時間</div>
+                    <div class="info-value timer">00:00</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">問題数</div>
+                    <div class="info-value progress">0/0</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">正解数</div>
+                    <div class="info-value correct-count">0</div>
+                </div>
+            </div>
+
+            <div class="question-card">
+                <div class="question-number">問題 1</div>
+                <div class="question-text">Loading...</div>
+                <div class="question-hint"></div>
+            </div>
+
+            <button class="hint-btn">💡 ヒントを見る</button>
+            <div class="hint-box">
+                <div class="hint-text"></div>
+            </div>
+
+            <input type="text" class="answer-input" placeholder="ここに入力してEnter" autocomplete="off">
+            <div class="feedback"></div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div class="result-screen">
+            <h2 style="font-size: 32px; margin-bottom: 20px;">🎉 完了！ 🎉</h2>
+            <div class="result-time">00:00</div>
+            
+            <div class="score-display">
+                <div style="font-size: 18px; margin-bottom: 10px;">あなたのスコア</div>
+                <div class="score-number">0</div>
+                <div style="font-size: 14px; opacity: 0.9;">スコア = (正解数 × 100) - 経過秒数</div>
+            </div>
+            
+            <div class="result-stats">
+                <div class="stat-row">
+                    <span class="stat-label">総問題数</span>
+                    <span class="stat-value total-questions">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">正解数</span>
+                    <span class="stat-value final-correct">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">正解率</span>
+                    <span class="stat-value accuracy">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">1問あたり平均時間</span>
+                    <span class="stat-value avg-time">0秒</span>
+                </div>
+            </div>
+            
+            <div class="name-input-section">
+                <h3 style="margin-bottom: 15px; color: #333;">あなたの名前を入力</h3>
+                <input type="text" class="name-input" placeholder="名前またはニックネームを入力" maxlength="20">
+                <button class="save-score-btn">次へ進む</button>
+            </div>
+            
+            <div class="qr-section" style="display: none;">
+                <h3 style="color: #333; margin-bottom: 10px;">📱 先生にこのコードを見せてください</h3>
+                <div class="submission-code"></div>
+                <p style="color: #718096; font-size: 14px; margin-top: 10px;">
+                    先生がこのコードを入力すると、ランキングに記録されます
+                </p>
+            </div>
+            
+            <button class="start-btn" onclick="location.reload()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        // 単語データ
+        const wordsData = [
+            {en: "happily", ja: "幸福に", def: "in a happy way", synonyms: []},
+            {en: "assignment", ja: "任務", def: "a task or piece of work", synonyms: ["task"]},
+            {en: "stamp", ja: "～に印を押す，捺印する", def: "to print letters using a special tool", synonyms: []},
+            {en: "document", ja: "書類，文書", def: "an official piece of paper", synonyms: []},
+            {en: "bomber", ja: "爆撃機", def: "a plane that carries bombs", synonyms: []},
+            {en: "parachute", ja: "パラシュート", def: "a device to fall slowly from aircraft", synonyms: []},
+            {en: "unconscious", ja: "意識を失った，気絶した", def: "not able to use your senses", synonyms: []},
+            {en: "dazed", ja: "呆然とした", def: "unable to think clearly", synonyms: ["confused"]},
+            {en: "recover", ja: "回復する", def: "to get well again", synonyms: []},
+            {en: "pain", ja: "痛み", def: "feeling when you are hurt", synonyms: []},
+            {en: "mushroom", ja: "キノコ", def: "a fungus with round flat head", synonyms: []},
+            {en: "soar", ja: "高く上がる，舞い上がる", def: "to fly high in the sky", synonyms: []},
+            {en: "colleague", ja: "同僚", def: "a person you work with", synonyms: ["coworker"]},
+            {en: "survivor", ja: "生存者", def: "person who continues to live after danger", synonyms: []},
+            {en: "shelter", ja: "避難所，防空壕", def: "structure for protection", synonyms: []},
+            {en: "manage", ja: "～をなんとかやり遂げる", def: "to succeed in doing something difficult", synonyms: []},
+            {en: "treatment", ja: "治療", def: "medical procedure to cure illness", synonyms: []},
+            {en: "heavily", ja: "非常に；大量に", def: "to a great degree", synonyms: []},
+            {en: "bandage", ja: "～に包帯をする", def: "to wrap cloth around injury", synonyms: []},
+            {en: "stunned", ja: "唖然として", def: "too surprised to speak", synonyms: ["shocked"]},
+            {en: "totally", ja: "まったく，すっかり", def: "completely", synonyms: ["completely", "entirely"]},
+            {en: "boss", ja: "上司", def: "person in charge at work", synonyms: []},
+            {en: "absolutely", ja: "絶対，完全に", def: "used to emphasize something", synonyms: ["completely"]},
+            {en: "impossible", ja: "ありえない；不可能な", def: "not possible", synonyms: []},
+            {en: "flash", ja: "閃き，閃光", def: "sudden bright light", synonyms: []},
+            {en: "alive", ja: "生きている，生きた状態で", def: "living; not dead", synonyms: ["living"]},
+            {en: "fate", ja: "運命", def: "things that happen to someone", synonyms: ["destiny"]},
+            {en: "suffer", ja: "苦しむ，悩む", def: "to experience pain", synonyms: []},
+            {en: "physically", ja: "肉体的に", def: "relating to your body", synonyms: []},
+            {en: "mentally", ja: "精神的に", def: "relating to your mind", synonyms: []},
+            {en: "bombing", ja: "爆撃", def: "use of bombs to attack", synonyms: []},
+            {en: "after-effect", ja: "後遺症", def: "bad effect continuing long time", synonyms: []},
+            {en: "eventually", ja: "ついに，やがて", def: "after a long time", synonyms: ["finally"]},
+            {en: "destiny", ja: "運命", def: "things that will happen", synonyms: ["fate"]},
+            {en: "duty", ja: "義務", def: "something you must do", synonyms: []},
+            {en: "painful", ja: "つらい，苦痛な", def: "causing you pain", synonyms: []},
+            {en: "sincerely", ja: "心から，本当に", def: "in a way you strongly feel", synonyms: []},
+            {en: "nuclear", ja: "原子力の，核兵器の", def: "relating to nuclear energy", synonyms: []},
+            {en: "pause", ja: "休止，絶え間", def: "short time of stopping", synonyms: ["break"]},
+            {en: "quietly", ja: "静かに", def: "without making noise", synonyms: []},
+            {en: "completely", ja: "完全に，徹底的に", def: "to the greatest degree", synonyms: ["totally", "entirely"]},
+            {en: "crazy", ja: "熱中している；正気でない", def: "very enthusiastic about something", synonyms: []},
+            {en: "cheer", ja: "声援を送る", def: "to shout showing support", synonyms: []},
+            {en: "historic", ja: "歴史的に有名な", def: "very important in history", synonyms: []},
+            {en: "league", ja: "競技連盟，リーグ", def: "group of sports teams", synonyms: []},
+            {en: "pitcher", ja: "投手", def: "player who throws ball", synonyms: []},
+            {en: "pitch", ja: "～を投げる", def: "to throw a ball", synonyms: ["throw"]},
+            {en: "opposing", ja: "対立する，反対の", def: "on the other team", synonyms: []},
+            {en: "batter", ja: "打者", def: "person trying to hit ball", synonyms: []},
+            {en: "expect", ja: "～を予期する", def: "to think something will happen", synonyms: []},
+            {en: "brief", ja: "短時間の", def: "continuing for short time", synonyms: ["short"]},
+            {en: "teammate", ja: "チームメイト", def: "someone on same team", synonyms: []},
+            {en: "umpire", ja: "審判員", def: "person who enforces rules", synonyms: ["referee"]},
+            {en: "locker", ja: "ロッカー", def: "small cupboard with lock", synonyms: []},
+            {en: "replay", ja: "リプレイ", def: "playing again of sports event", synonyms: []},
+            {en: "devastated", ja: "打ちひしがれた", def: "extremely shocked and sad", synonyms: []},
+            {en: "slump", ja: "ドスンと落ちる［倒れる］", def: "to fall because not strong", synonyms: []},
+            {en: "dozen", ja: "12個，ダース", def: "twelve", synonyms: []},
+            {en: "admit", ja: "～を認める", def: "to say something is true", synonyms: ["acknowledge"]},
+            {en: "apologize", ja: "謝罪する，謝る", def: "to say you are sorry", synonyms: []},
+            {en: "veteran", ja: "老練な，老巧な", def: "having much experience", synonyms: ["experienced"]},
+            {en: "forth", ja: "前へ，外へ", def: "going out from a place", synonyms: []},
+            {en: "hug", ja: "抱擁", def: "holding someone tightly", synonyms: ["embrace"]},
+            {en: "stuff", ja: "（特定のものを指さない，漠然とした）もの", def: "things or activities", synonyms: ["things"]},
+            {en: "calmly", ja: "冷静に，静かに", def: "in a relaxed way", synonyms: []},
+            {en: "exchange", ja: "～を交換する", def: "to give and receive", synonyms: []},
+            {en: "lineup", ja: "（選手の）陣容", def: "positions of players", synonyms: []},
+            {en: "crowd", ja: "人混み，観衆", def: "large group of people", synonyms: []},
+            {en: "award", ja: "賞", def: "prize given to someone", synonyms: ["prize"]},
+            {en: "shortly", ja: "まもなく，じきに", def: "soon; in near future", synonyms: ["soon"]},
+            {en: "founder", ja: "創設者", def: "someone who establishes organization", synonyms: []},
+            {en: "literature", ja: "文学", def: "books and poems of high quality", synonyms: []},
+            {en: "admire", ja: "～に感心する，～を称賛する", def: "to respect and like someone", synonyms: []},
+            {en: "desperate", ja: "絶望的な，深刻な", def: "very bad or serious", synonyms: []},
+            {en: "courage", ja: "勇気", def: "quality of being brave", synonyms: ["bravery"]},
+            {en: "author", ja: "著者", def: "someone who wrote a book", synonyms: ["writer"]},
+            {en: "childhood", ja: "子ども時代", def: "time when you are a child", synonyms: []},
+            {en: "onomatopoeia", ja: "擬音［態］語，オノマトペ", def: "words that sound like what they describe", synonyms: []},
+            {en: "calm", ja: "～を落ち着かせる", def: "to make quiet and relaxed", synonyms: []},
+            {en: "peach", ja: "桃", def: "round juicy fruit", synonyms: []},
+            {en: "float", ja: "浮く，浮かぶ", def: "to stay on liquid surface", synonyms: []},
+            {en: "pleasant", ja: "楽しい，気持ちのよい", def: "enjoyable and making happy", synonyms: []},
+            {en: "rhythm", ja: "リズム", def: "regular pattern of sounds", synonyms: []},
+            {en: "unconsciously", ja: "無意識に", def: "without being aware", synonyms: []},
+            {en: "magic", ja: "魔法", def: "power to make impossible happen", synonyms: []},
+            {en: "spell", ja: "呪文", def: "special words in magic", synonyms: []},
+            {en: "everyday", ja: "毎日の", def: "ordinary or usual", synonyms: ["daily"]},
+            {en: "imagination", ja: "想像力", def: "ability to form pictures in mind", synonyms: []},
+            {en: "onomatopoeic", ja: "擬音［態］語の，オノマトペの", def: "relating to sound-describing words", synonyms: []},
+            {en: "phrase", ja: "句，慣用句", def: "group of words with meaning", synonyms: []},
+            {en: "delightful", ja: "楽しい，愉快な", def: "very pleasant", synonyms: ["pleasant"]},
+            {en: "beat", ja: "打つ，鼓動する", def: "to make regular sound", synonyms: []},
+            {en: "recall", ja: "～を思い出す", def: "to remember from past", synonyms: ["remember"]},
+            {en: "mystery", ja: "神秘的なこと，不可解なこと", def: "something difficult to understand", synonyms: []},
+            {en: "depth", ja: "深さ", def: "distance from top to bottom", synonyms: []},
+            {en: "vocabulary", ja: "語彙", def: "all words someone knows", synonyms: []},
+            {en: "professor", ja: "教授", def: "highest rank university teacher", synonyms: []},
+            {en: "nonfiction", ja: "ノンフィクション", def: "books about real facts", synonyms: []},
+            {en: "Brazilian", ja: "ブラジル（人）の", def: "relating to Brazil", synonyms: []},
+            {en: "combine", ja: "結合する，結びつく", def: "to mix or join together", synonyms: []},
+            {en: "reader", ja: "読者", def: "someone who reads", synonyms: []},
+            {en: "mood", ja: "気分", def: "way you feel", synonyms: []},
+            {en: "inner", ja: "内の，内部の", def: "on the inside", synonyms: []}
+        ];
+
+        const phrasesData = [
+            {en: "spend A (in) doing", ja: "～してＡを過ごす", words: 4, synonyms: []},
+            {en: "knock A unconscious", ja: "Aを気絶させる", words: 3, synonyms: []},
+            {en: "get away from A", ja: "Aから離れる，逃げる", words: 4, synonyms: ["escape from A"]},
+            {en: "as soon as possible", ja: "できるだけ早く", words: 4, synonyms: ["ASAP"]},
+            {en: "manage to do", ja: "なんとか～する", words: 3, synonyms: ["succeed in doing"]},
+            {en: "only to do", ja: "結局ただ～する結果となる", words: 3, synonyms: []},
+            {en: "suffer from A", ja: "Aに苦しむ", words: 3, synonyms: []},
+            {en: "in public", ja: "人前で", words: 2, synonyms: []},
+            {en: "give a speech", ja: "演説をする", words: 3, synonyms: ["make a speech"]},
+            {en: "believe in A", ja: "Ａの価値［正しさ］を信じる", words: 3, synonyms: []},
+            {en: "do one's duty", ja: "義務を果たす", words: 3, synonyms: []},
+            {en: "pass away", ja: "亡くなる", words: 2, synonyms: ["die"]},
+            {en: "go crazy", ja: "夢中になる，熱狂する", words: 2, synonyms: ["get really excited"]},
+            {en: "dream of A", ja: "Aを夢見る", words: 3, synonyms: ["dream about A"]},
+            {en: "make a call", ja: "判定を下す", words: 3, synonyms: []},
+            {en: "spread out A", ja: "Ａを広げる", words: 3, synonyms: ["spread A out"]},
+            {en: "say A to oneself", ja: "ひとりごとでAと言う", words: 4, synonyms: []},
+            {en: "do nothing but do", ja: "ただ～するだけである", words: 4, synonyms: ["only do"]},
+            {en: "cannot stop doing", ja: "～せずにはいられない", words: 3, synonyms: ["can't stop doing"]},
+            {en: "dozens of A", ja: "何ダースものA，多数のA", words: 3, synonyms: []},
+            {en: "on the other side of A", ja: "Aの反対側に", words: 6, synonyms: []},
+            {en: "by oneself", ja: "自分自身で", words: 2, synonyms: ["alone"]},
+            {en: "with tears", ja: "（目に）涙をためて", words: 2, synonyms: ["with tears in one's eyes"]},
+            {en: "my God", ja: "ああ困った，大変だ", words: 2, synonyms: ["oh my God"]},
+            {en: "back and forth", ja: "前後に", words: 3, synonyms: []},
+            {en: "give A a hug", ja: "Ａを抱擁する", words: 4, synonyms: ["hug A"]},
+            {en: "instead of A", ja: "Aの代わりに", words: 3, synonyms: []},
+            {en: "shake hands", ja: "握手をする", words: 2, synonyms: ["shake hands with A"]},
+            {en: "run down", ja: "流れ落ちる", words: 2, synonyms: []},
+            {en: "in the middle of A", ja: "Aの真っただ中で", words: 5, synonyms: []},
+            {en: "begin with A", ja: "Aから始まる", words: 3, synonyms: ["start with A"]},
+            {en: "go well", ja: "うまくいく", words: 2, synonyms: []},
+            {en: "ever so", ja: "実に，大変", words: 2, synonyms: ["very"]},
+            {en: "become friends with A", ja: "Aと友達になる", words: 4, synonyms: ["get along well with A"]},
+            {en: "come across", ja: "伝わる，理解される", words: 2, synonyms: ["be easy to understand"]},
+            {en: "bring together A", ja: "Aを結びつける，親しくさせる", words: 3, synonyms: ["bring A together"]}
+        ];
+
+        // Google Formsの設定
+        const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSenJUvgmrF4UXEocW877Awvp5mpCQ-amome_sQw5uT7x_W5Jw/formResponse';
+        
+        // フォームのフィールドID
+        let FORM_FIELD_IDS = {
+            name: 'entry.1732792071',      // 名前
+            score: 'entry.536464528',      // スコア
+            correct: 'entry.2006245073',   // 正解数
+            total: 'entry.1318216277',     // 総問題数
+            time: 'entry.204148755'        // 時間（秒）
+        };
+
+        // Google Formに送信（iframe方式）
+        function submitToGoogleForm(data) {
+            return new Promise((resolve) => {
+                // 隠しiframeを作成
+                const iframe = document.createElement('iframe');
+                iframe.name = 'hidden_iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                // フォームを作成
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = GOOGLE_FORM_URL;
+                form.target = 'hidden_iframe';
+
+                // フィールドを追加
+                for (const [key, fieldId] of Object.entries(FORM_FIELD_IDS)) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = fieldId;
+                    input.value = data[key] || '';
+                    form.appendChild(input);
+                }
+
+                // フォームをbodyに追加して送信
+                document.body.appendChild(form);
+                form.submit();
+
+                // 送信後、少し待ってからフォームとiframeを削除
+                setTimeout(() => {
+                    document.body.removeChild(form);
+                    document.body.removeChild(iframe);
+                    resolve(true);
+                }, 1000);
+            });
+        }
+
+        // ゲーム状態
+        let gameState = {
+            mode: 'words',
+            direction: 'ja-en',
+            questionCount: 25,
+            questions: [],
+            currentIndex: 0,
+            correctCount: 0,
+            startTime: null,
+            timerInterval: null,
+            hintUsed: false
+        };
+
+        // セットアップ画面のボタン処理
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                gameState.mode = this.dataset.mode;
+            });
+        });
+
+        document.querySelectorAll('.count-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                gameState.questionCount = this.dataset.count;
+            });
+        });
+
+        document.querySelectorAll('.direction-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.direction-btn').forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                gameState.direction = this.dataset.direction;
+            });
+        });
+
+        // ゲームスタート
+        document.querySelector('.start-btn').addEventListener('click', startGame);
+
+        function startGame() {
+            // 問題データを準備
+            const data = gameState.mode === 'words' ? wordsData : phrasesData;
+            const shuffled = [...data].sort(() => Math.random() - 0.5);
+            
+            // 出題数を決定
+            if (gameState.questionCount === 'all') {
+                gameState.questions = shuffled;
+            } else {
+                const count = parseInt(gameState.questionCount);
+                gameState.questions = shuffled.slice(0, Math.min(count, shuffled.length));
+            }
+            
+            gameState.currentIndex = 0;
+            gameState.correctCount = 0;
+            gameState.startTime = Date.now();
+
+            // 画面切り替え
+            document.querySelector('.setup-screen').classList.remove('active');
+            document.querySelector('.game-screen').classList.add('active');
+
+            // タイマー開始
+            updateTimer();
+            gameState.timerInterval = setInterval(updateTimer, 1000);
+
+            // 最初の問題を表示
+            showQuestion();
+
+            // 入力フォーカス
+            document.querySelector('.answer-input').focus();
+        }
+
+        function showQuestion() {
+            const question = gameState.questions[gameState.currentIndex];
+            const questionNumber = gameState.currentIndex + 1;
+            const totalQuestions = gameState.questions.length;
+
+            // 進捗更新
+            document.querySelector('.question-number').textContent = `問題 ${questionNumber}`;
+            document.querySelector('.progress').textContent = `${questionNumber}/${totalQuestions}`;
+            document.querySelector('.correct-count').textContent = gameState.correctCount;
+            
+            const progressPercent = (questionNumber / totalQuestions) * 100;
+            document.querySelector('.progress-fill').style.width = `${progressPercent}%`;
+
+            // 問題表示
+            if (gameState.direction === 'ja-en') {
+                document.querySelector('.question-text').textContent = question.ja;
+                let hintText = '英語で答えてください';
+                if (gameState.mode === 'phrases' && question.words) {
+                    hintText = `英語で答えてください（${question.words}語）`;
+                }
+                document.querySelector('.question-hint').innerHTML = hintText;
+            } else {
+                document.querySelector('.question-text').textContent = question.en;
+                document.querySelector('.question-hint').textContent = '日本語で答えてください';
+            }
+
+            // 入力欄とヒントをリセット
+            const input = document.querySelector('.answer-input');
+            input.value = '';
+            input.className = 'answer-input';
+            document.querySelector('.feedback').textContent = '';
+            document.querySelector('.feedback').className = 'feedback';
+            document.querySelector('.hint-box').classList.remove('visible');
+            gameState.hintUsed = false;
+        }
+
+        // ヒントボタン
+        document.querySelector('.hint-btn').addEventListener('click', function() {
+            if (gameState.hintUsed) return;
+            
+            const question = gameState.questions[gameState.currentIndex];
+            const hintBox = document.querySelector('.hint-box');
+            const hintText = document.querySelector('.hint-text');
+            
+            if (gameState.direction === 'ja-en') {
+                // 英語→定義と最初の文字
+                const firstLetter = question.en.charAt(0).toUpperCase();
+                const definition = question.def || '';
+                hintText.innerHTML = `💡 最初の文字: <strong>${firstLetter}</strong><br>定義: ${definition}`;
+            } else {
+                // 日本語→最初の文字
+                const firstChar = question.ja.charAt(0);
+                hintText.innerHTML = `💡 最初の文字: <strong>${firstChar}</strong>`;
+            }
+            
+            hintBox.classList.add('visible');
+            gameState.hintUsed = true;
+        });
+
+        // 答えの入力処理
+        document.querySelector('.answer-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        function checkAnswer() {
+            const input = document.querySelector('.answer-input');
+            const userAnswer = input.value.trim().toLowerCase();
+            const question = gameState.questions[gameState.currentIndex];
+            
+            let correctAnswers = [];
+            if (gameState.direction === 'ja-en') {
+                correctAnswers.push(question.en.toLowerCase());
+                if (question.synonyms && question.synonyms.length > 0) {
+                    correctAnswers.push(...question.synonyms.map(s => s.toLowerCase()));
+                }
+            } else {
+                correctAnswers.push(question.ja.toLowerCase());
+            }
+
+            const feedback = document.querySelector('.feedback');
+            const isCorrect = correctAnswers.some(answer => answer === userAnswer);
+
+            if (isCorrect) {
+                // 正解
+                input.classList.add('correct');
+                feedback.textContent = '✓ 正解！';
+                feedback.classList.add('correct');
+                gameState.correctCount++;
+                
+                setTimeout(() => {
+                    gameState.currentIndex++;
+                    if (gameState.currentIndex < gameState.questions.length) {
+                        showQuestion();
+                    } else {
+                        endGame();
+                    }
+                }, 800);
+            } else {
+                // 不正解
+                input.classList.add('incorrect');
+                let correctDisplay = gameState.direction === 'ja-en' ? question.en : question.ja;
+                if (gameState.direction === 'ja-en' && question.synonyms && question.synonyms.length > 0) {
+                    correctDisplay += ` (類義語: ${question.synonyms.join(', ')})`;
+                }
+                feedback.textContent = `✗ 不正解！正解: ${correctDisplay}`;
+                feedback.classList.add('incorrect');
+                
+                setTimeout(() => {
+                    gameState.currentIndex++;
+                    if (gameState.currentIndex < gameState.questions.length) {
+                        showQuestion();
+                    } else {
+                        endGame();
+                    }
+                }, 2000);
+            }
+        }
+
+        function updateTimer() {
+            const elapsed = Date.now() - gameState.startTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const displaySeconds = seconds % 60;
+            
+            const timeString = `${String(minutes).padStart(2, '0')}:${String(displaySeconds).padStart(2, '0')}`;
+            document.querySelector('.timer').textContent = timeString;
+        }
+
+        function endGame() {
+            clearInterval(gameState.timerInterval);
+            
+            const totalTime = Date.now() - gameState.startTime;
+            const seconds = Math.floor(totalTime / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const displaySeconds = seconds % 60;
+            
+            const timeString = `${String(minutes).padStart(2, '0')}:${String(displaySeconds).padStart(2, '0')}`;
+            const totalQuestions = gameState.questions.length;
+            const accuracy = Math.round((gameState.correctCount / totalQuestions) * 100);
+            const avgTime = (seconds / totalQuestions).toFixed(1);
+            
+            // スコア計算: (正解数 × 100) - 経過秒数
+            const score = (gameState.correctCount * 100) - seconds;
+
+            // 結果画面に値を設定
+            document.querySelector('.result-time').textContent = timeString;
+            document.querySelector('.score-number').textContent = score;
+            document.querySelector('.total-questions').textContent = totalQuestions;
+            document.querySelector('.final-correct').textContent = gameState.correctCount;
+            document.querySelector('.accuracy').textContent = `${accuracy}%`;
+            document.querySelector('.avg-time').textContent = `${avgTime}秒`;
+            
+            // スコアを一時保存
+            gameState.finalScore = score;
+            gameState.finalTime = seconds;
+
+            // 画面切り替え
+            document.querySelector('.game-screen').classList.remove('active');
+            document.querySelector('.result-screen').classList.add('active');
+        }
+
+        // スコア送信機能
+        document.querySelector('.save-score-btn').addEventListener('click', async function() {
+            const nameInput = document.querySelector('.name-input');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                alert('名前を入力してください');
+                return;
+            }
+            
+            // ボタンを無効化
+            this.disabled = true;
+            this.textContent = '送信中...';
+            
+            // 送信データ作成
+            const submitData = {
+                name: name,
+                score: gameState.finalScore.toString(),
+                correct: gameState.correctCount.toString(),
+                total: gameState.questions.length.toString(),
+                time: gameState.finalTime.toString()
+            };
+            
+            // Google Formに送信
+            const success = await submitToGoogleForm(submitData);
+            
+            // 送信完了表示
+            document.querySelector('.name-input-section').style.display = 'none';
+            document.querySelector('.qr-section').style.display = 'block';
+            
+            const qrSection = document.querySelector('.qr-section');
+            qrSection.innerHTML = `
+                <h3 style="color: #48bb78; margin-bottom: 20px;">✅ 送信完了！</h3>
+                <div style="font-size: 18px; color: #333; margin-bottom: 10px;">
+                    <strong>${name}</strong>さんの結果を記録しました
+                </div>
+                <div style="background: white; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                    <div style="font-size: 16px; color: #667eea; margin-bottom: 10px;">あなたのスコア</div>
+                    <div style="font-size: 48px; font-weight: bold; color: #667eea;">${gameState.finalScore}</div>
+                    <div style="font-size: 14px; color: #718096; margin-top: 10px;">
+                        正解数: ${gameState.correctCount}/${gameState.questions.length}
+                    </div>
+                </div>
+                <p style="color: #718096; font-size: 14px;">
+                    先生のスプレッドシートに自動で記録されました
+                </p>
+            `;
+            
+            this.textContent = '✅ 送信完了';
+        });
+
+        // スプレッドシート表示
+        document.querySelector('.view-spreadsheet-btn').addEventListener('click', function() {
+            const spreadsheetUrl = 'https://docs.google.com/forms/d/1FAIpQLSenJUvgmrF4UXEocW877Awvp5mpCQ-amome_sQw5uT7x_W5Jw/edit#responses';
+            window.open(spreadsheetUrl, '_blank');
+        });
+    </script>
+</body>
+</html>
